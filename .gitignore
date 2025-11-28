@@ -1,0 +1,40 @@
+﻿# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Environment variables
+.env
+.env.local
+
+# Node
+node_modules/
+.next/
+out/
+npm-debug.log*
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log

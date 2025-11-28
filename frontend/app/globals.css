@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@theme {
+  --color-blood-red: #8b0000;
+  --color-ghost-white: #f8f8ff;
+  --color-shadow-purple: #4b0082;
+  --color-decay-green: #228b22;
+}
+
+body {
+  background-color: rgb(10, 10, 15);
+  color: rgb(240, 240, 255);
+  font-family: 'Courier New', monospace;
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(139, 0, 0, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(75, 0, 130, 0.1) 0%, transparent 50%);
+}
+
+.haunted-card {
+  background-color: rgba(17, 24, 39, 0.8);
+  border: 1px solid rgba(127, 29, 29, 0.3);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 0 20px rgba(139, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s;
+}
+
+.haunted-card:hover {
+  box-shadow: 0 0 30px rgba(139, 0, 0, 0.5);
+}
+
+.blood-text {
+  color: rgb(220, 38, 38);
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(139, 0, 0, 0.8);
+}
+
+.ghost-text {
+  color: rgb(209, 213, 219);
+  animation: flicker 3s infinite;
+}
+
+.cursed-button {
+  background: linear-gradient(to right, rgb(127, 29, 29), rgb(88, 28, 135));
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
+  transition: all 0.3s;
+  border: 1px solid rgb(185, 28, 28);
+}
+
+.cursed-button:hover {
+  background: linear-gradient(to right, rgb(153, 27, 27), rgb(107, 33, 168));
+  box-shadow: 0 0 25px rgba(139, 0, 0, 0.8);
+}
+
+.spectral-glow {
+  animation: spectral-pulse 2s ease-in-out infinite;
+}
+
+.dripping-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.dripping-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(139, 0, 0, 0.8) 50%, 
+    transparent 100%);
+  animation: drip 3s ease-in-out infinite;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes spectral-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(139, 0, 0, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(139, 0, 0, 0.6);
+  }
+}
+
+@keyframes drip {
+  0% { transform: translateY(-100%); }
+  50% { transform: translateY(0); }
+  100% { transform: translateY(-100%); }
+}
+
+.fog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at bottom, rgba(139, 0, 0, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cracked-glass {
+  background: linear-gradient(135deg, 
+    rgba(139, 0, 0, 0.1) 0%, 
+    rgba(75, 0, 130, 0.1) 100%);
+  backdrop-filter: blur(10px);
+}
