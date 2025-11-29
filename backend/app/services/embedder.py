@@ -1,6 +1,6 @@
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
 from qdrant_client.http.exceptions import UnexpectedResponse
 from typing import List, Optional
 import uuid
@@ -68,43 +68,56 @@ class EmbeddingService:
         """Search for similar articles"""
         embedding = self.generate_embedding(text)
         
-        results = self.qdrant.search(
-            collection_name=settings.QDRANT_COLLECTION_NAME,
-            query_vector=embedding,
-            limit=limit,
-            score_threshold=score_threshold
-        )
-        
-        return results
+        try:
+            results = self.qdrant.query_points(
+                collection_name=settings.QDRANT_COLLECTION_NAME,
+                query=embedding,
+                limit=limit,
+                score_threshold=score_threshold
+            )
+            return results.points
+        except Exception as e:
+            print(f"Error in search_similar: {e}")
+            return []
     
     def search_similar_to_article(self, article_id: int, limit: int = 10):
         """Find articles similar to a given article"""
-        # Get the article's embedding from Qdrant
-        results = self.qdrant.scroll(
-            collection_name=settings.QDRANT_COLLECTION_NAME,
-            scroll_filter={
-                "must": [
-                    {
-                        "key": "article_id",
-                        "match": {"value": article_id}
-                    }
-                ]
-            },
-            limit=1
-        )
-        
-        if not results[0]:
+        try:
+            # Get the article's point from Qdrant
+            results = self.qdrant.scroll(
+                collection_name=settings.QDRANT_COLLECTION_NAME,
+                scroll_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="article_id",
+                            match=MatchValue(value=article_id)
+                        )
+                    ]
+                ),
+                limit=1
+            )
+            
+            points, _ = results
+            
+            if not points:
+                return []
+            
+            point = points[0]
+            
+            # Search for similar articles using the vector
+            similar_results = self.qdrant.query_points(
+                collection_name=settings.QDRANT_COLLECTION_NAME,
+                query=point.vector,
+                limit=limit + 1  # +1 to potentially exclude self
+            )
+            
+            # Filter out the original article and apply score threshold manually
+            similar_points = [
+                p for p in similar_results.points 
+                if p.payload.get('article_id') != article_id and p.score >= 0.7
+            ]
+            
+            return similar_points[:limit]
+        except Exception as e:
+            print(f"Error in search_similar_to_article: {e}")
             return []
-        
-        point = results[0][0]
-        
-        # Search for similar articles
-        similar = self.qdrant.search(
-            collection_name=settings.QDRANT_COLLECTION_NAME,
-            query_vector=point.vector,
-            limit=limit + 1,  # +1 to exclude self
-            score_threshold=0.7
-        )
-        
-        # Filter out the original article
-        return [r for r in similar if r.payload.get('article_id') != article_id]

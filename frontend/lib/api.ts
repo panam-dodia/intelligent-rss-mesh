@@ -6,6 +6,11 @@ export const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+export const graphAPI = {
+  getKnowledgeGraph: (hours = 48, minSimilarity = 0.75) => 
+    api.get('/graph/knowledge-graph', { params: { hours, min_similarity: minSimilarity } }),
+};
+
 export const feedsAPI = {
   getAll: () => api.get('/feeds/'),
   add: (feed: { url: string; title: string; category: string }) => api.post('/feeds/', feed),

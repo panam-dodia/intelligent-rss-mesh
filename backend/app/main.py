@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api import feeds, articles, processing, analysis
-from app.api import feeds, articles, processing, analysis, synthesis
+from app.api import feeds, articles, processing, analysis, synthesis, graph
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -25,6 +24,7 @@ app.include_router(articles.router, prefix=settings.API_V1_PREFIX)
 app.include_router(processing.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analysis.router, prefix=settings.API_V1_PREFIX)
 app.include_router(synthesis.router, prefix=settings.API_V1_PREFIX)
+app.include_router(graph.router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/")
 async def root():
