@@ -1,5 +1,7 @@
 from app.db.database import engine, Base
 from app.models.article import Article, Feed, Entity
+from app.db.database import engine, Base
+from app.models.user import User, UserPreferences
 
 def init_db():
     """Initialize database tables"""

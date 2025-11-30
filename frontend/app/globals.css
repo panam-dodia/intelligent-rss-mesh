@@ -1,103 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Creepster&family=Cinzel:wght@400;700&family=Roboto+Mono:wght@300;400;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-blood-red: #8b0000;
-  --color-ghost-white: #f8f8ff;
-  --color-shadow-purple: #4b0082;
-  --color-decay-green: #228b22;
+  --color-blood-red: #8B0000;
+  --color-dark-red: #450000;
+  --color-ghost-white: #F8F8FF;
+  --color-shadow-purple: #4B0082;
+  --color-decay-green: #228B22;
+  --color-bone-white: #FFF8DC;
 }
 
 body {
-  background-color: rgb(10, 10, 15);
-  color: rgb(240, 240, 255);
-  font-family: 'Courier New', monospace;
+  background: black;
+  color: rgb(243 244 246);
+  font-family: 'Roboto Mono', monospace;
   background-image: 
-    radial-gradient(circle at 20% 50%, rgba(139, 0, 0, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(75, 0, 130, 0.1) 0%, transparent 50%);
+    radial-gradient(ellipse at top, rgba(139, 0, 0, 0.15), transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(75, 0, 130, 0.1), transparent 50%);
+  background-attachment: fixed;
 }
 
 .haunted-card {
-  background-color: rgba(17, 24, 39, 0.8);
-  border: 1px solid rgba(127, 29, 29, 0.3);
-  border-radius: 0.5rem;
+  position: relative;
+  background: linear-gradient(to bottom right, rgba(17, 24, 39, 0.9), rgba(17, 24, 39, 0.8), rgba(0, 0, 0, 0.9));
+  border: 1px solid rgba(139, 0, 0, 0.4);
+  border-radius: 0.75rem;
   padding: 1.5rem;
-  box-shadow: 0 0 20px rgba(139, 0, 0, 0.3);
-  backdrop-filter: blur(4px);
-  transition: all 0.3s;
+  backdrop-filter: blur(12px);
+  transition: all 0.5s ease-out;
+  overflow: hidden;
+  box-shadow: 
+    0 0 30px rgba(139, 0, 0, 0.2),
+    inset 0 0 20px rgba(139, 0, 0, 0.05);
+}
+
+.haunted-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(139, 0, 0, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.haunted-card:hover::before {
+  left: 100%;
 }
 
 .haunted-card:hover {
-  box-shadow: 0 0 30px rgba(139, 0, 0, 0.5);
+  border-color: rgba(185, 28, 28, 0.6);
+  transform: scale(1.02);
+  box-shadow: 
+    0 0 50px rgba(139, 0, 0, 0.4),
+    inset 0 0 30px rgba(139, 0, 0, 0.1);
 }
 
 .blood-text {
-  color: rgb(220, 38, 38);
-  font-weight: bold;
-  text-shadow: 0 0 10px rgba(139, 0, 0, 0.8);
+  color: rgb(220 38 38);
+  font-weight: 700;
+  font-family: 'Cinzel', serif;
+  text-shadow: 
+    0 0 20px rgba(139, 0, 0, 0.8),
+    0 0 40px rgba(139, 0, 0, 0.4);
+  animation: blood-pulse 3s ease-in-out infinite;
 }
 
 .ghost-text {
-  color: rgb(209, 213, 219);
-  animation: flicker 3s infinite;
+  color: rgb(156 163 175);
+  animation: ghost-flicker 4s infinite;
 }
 
 .cursed-button {
-  background: linear-gradient(to right, rgb(127, 29, 29), rgb(88, 28, 135));
+  position: relative;
+  background: linear-gradient(to right, rgba(127, 29, 29, 0.9), rgba(153, 27, 27, 0.8), rgba(88, 28, 135, 0.9));
   color: white;
-  font-weight: bold;
-  padding: 0.5rem 1.5rem;
+  font-weight: 700;
+  padding: 0.75rem 2rem;
   border-radius: 0.5rem;
-  box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
   transition: all 0.3s;
-  border: 1px solid rgb(185, 28, 28);
+  border: 1px solid rgba(185, 28, 28, 0.5);
+  overflow: hidden;
+  font-family: 'Cinzel', serif;
+  box-shadow: 
+    0 0 20px rgba(139, 0, 0, 0.3),
+    inset 0 0 20px rgba(139, 0, 0, 0.1);
+}
+
+.cursed-button::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  transform: rotate(45deg);
+  transition: all 0.5s;
+}
+
+.cursed-button:hover::before {
+  left: 100%;
 }
 
 .cursed-button:hover {
-  background: linear-gradient(to right, rgb(153, 27, 27), rgb(107, 33, 168));
-  box-shadow: 0 0 25px rgba(139, 0, 0, 0.8);
+  background: linear-gradient(to right, rgb(153, 27, 27), rgb(185, 28, 28), rgb(107, 33, 168));
+  box-shadow: 
+    0 0 40px rgba(139, 0, 0, 0.6),
+    inset 0 0 30px rgba(139, 0, 0, 0.2);
+  transform: translateY(-2px);
 }
 
 .spectral-glow {
   animation: spectral-pulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px currentColor);
 }
 
 .dripping-effect {
   position: relative;
-  overflow: hidden;
 }
 
 .dripping-effect::after {
   content: '';
   position: absolute;
-  top: 0;
+  bottom: -1px;
   left: 0;
   width: 100%;
-  height: 2px;
+  height: 3px;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(139, 0, 0, 0.8) 50%, 
+    rgba(139, 0, 0, 0.8) 20%,
+    rgba(139, 0, 0, 0.9) 50%, 
+    rgba(139, 0, 0, 0.8) 80%,
     transparent 100%);
-  animation: drip 3s ease-in-out infinite;
+  filter: blur(1px);
 }
 
-@keyframes flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+.title-horror {
+  font-family: 'Creepster', cursive;
+  letter-spacing: 0.05em;
 }
 
-@keyframes spectral-pulse {
-  0%, 100% { 
-    box-shadow: 0 0 20px rgba(139, 0, 0, 0.3);
-  }
-  50% { 
-    box-shadow: 0 0 40px rgba(139, 0, 0, 0.6);
-  }
-}
-
-@keyframes drip {
-  0% { transform: translateY(-100%); }
-  50% { transform: translateY(0); }
-  100% { transform: translateY(-100%); }
+.crack-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10,10 L90,90 M20,90 L80,10 M50,0 L50,100 M0,50 L100,50' stroke='%238B0000' stroke-width='0.5' fill='none' opacity='0.3'/%3E%3C/svg%3E");
 }
 
 .fog-overlay {
@@ -106,14 +156,67 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(ellipse at bottom, rgba(139, 0, 0, 0.1) 0%, transparent 70%);
+  background: 
+    radial-gradient(ellipse at 30% 50%, rgba(139, 0, 0, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(75, 0, 130, 0.08) 0%, transparent 50%);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
+  animation: fog-move 20s ease-in-out infinite;
 }
 
-.cracked-glass {
-  background: linear-gradient(135deg, 
-    rgba(139, 0, 0, 0.1) 0%, 
-    rgba(75, 0, 130, 0.1) 100%);
-  backdrop-filter: blur(10px);
+@keyframes blood-pulse {
+  0%, 100% { 
+    text-shadow: 
+      0 0 20px rgba(139, 0, 0, 0.8),
+      0 0 40px rgba(139, 0, 0, 0.4);
+  }
+  50% { 
+    text-shadow: 
+      0 0 30px rgba(139, 0, 0, 1),
+      0 0 60px rgba(139, 0, 0, 0.6);
+  }
+}
+
+@keyframes ghost-flicker {
+  0%, 100% { opacity: 1; }
+  25% { opacity: 0.8; }
+  50% { opacity: 0.9; }
+  75% { opacity: 0.7; }
+}
+
+@keyframes spectral-pulse {
+  0%, 100% { 
+    filter: drop-shadow(0 0 10px currentColor);
+  }
+  50% { 
+    filter: drop-shadow(0 0 20px currentColor) drop-shadow(0 0 30px currentColor);
+  }
+}
+
+@keyframes fog-move {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.5; }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-left: 1px solid rgba(139, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #8B0000, #450000);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #a00000, #600000);
+}
+
+::selection {
+  background: rgba(139, 0, 0, 0.3);
+  color: #fff;
 }

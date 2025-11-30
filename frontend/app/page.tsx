@@ -1,23 +1,52 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/AuthContext';
 import { Activity, TrendingUp, Database, Zap } from 'lucide-react';
 import StatsCard from '@/components/StatsCard';
 import CascadeCard from '@/components/CascadeCard';
 import SynthesisModal from '@/components/SynthesisModal';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { processingAPI, synthesisAPI, analysisAPI } from '@/lib/api';
-import { Cascade, Synthesis } from '@/types';
 import KnowledgeGraph from '@/components/KnowledgeGraph';
-import { graphAPI } from '@/lib/api';
+import SpookyLoader from '@/components/SpookyLoader';
+import { processingAPI, synthesisAPI, analysisAPI, graphAPI } from '@/lib/api';
+import { Cascade, Synthesis } from '@/types';
 
 export default function Home() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    console.log('Page auth check:', { user, authLoading });
+    if (!authLoading && !user) {
+      console.log('Redirecting to login');
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return <SpookyLoader message="Awakening the spirits..." />;
+  }
+
+  // If not authenticated, don't render (will redirect)
+  if (!user) {
+    return null;
+  }
+
+  // Main dashboard component
+  return <Dashboard />;
+}
+
+function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [syntheses, setSyntheses] = useState<Synthesis[]>([]);
   const [cascades, setCascades] = useState<Cascade[]>([]);
+  const [graphData, setGraphData] = useState<any>(null);
   const [selectedSynthesis, setSelectedSynthesis] = useState<Synthesis | null>(null);
   const [loading, setLoading] = useState(true);
-  const [graphData, setGraphData] = useState<any>(null);
 
   useEffect(() => {
     fetchData();
@@ -45,6 +74,11 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // Show spooky loader while loading data
+  if (loading) {
+    return <SpookyLoader message="Summoning intelligence from the abyss..." />;
+  }
 
   return (
     <div className="space-y-8">
@@ -96,6 +130,7 @@ export default function Home() {
           <KnowledgeGraph data={graphData} />
         </div>
       )}
+
       {/* AI Syntheses Section */}
       <div>
         <div className="flex items-center space-x-3 mb-6">
@@ -105,11 +140,7 @@ export default function Home() {
           </h2>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map(i => <LoadingSkeleton key={i} />)}
-          </div>
-        ) : syntheses.length > 0 ? (
+        {syntheses.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {syntheses.map((synthesis, idx) => {
               const cascade = cascades.find(c => c.entity === synthesis.entity);

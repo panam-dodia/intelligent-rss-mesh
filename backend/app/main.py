@@ -1,12 +1,26 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api import feeds, articles, processing, analysis, synthesis, graph
+from app.api import feeds, articles, processing, analysis, synthesis, graph, auth, users
+import asyncio
+from contextlib import asynccontextmanager
+from app.services.scheduler import background_scheduler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start background scheduler
+    task = asyncio.create_task(background_scheduler())
+    print("🎃 Background scheduler started")
+    yield
+    # Shutdown: Cancel the task
+    task.cancel()
+    print("👻 Background scheduler stopped")
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
-    description="AI-powered RSS feed intelligence system"
+    description="AI-powered RSS feed intelligence system",
+    lifespan=lifespan
 )
 
 # CORS
@@ -25,6 +39,8 @@ app.include_router(processing.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analysis.router, prefix=settings.API_V1_PREFIX)
 app.include_router(synthesis.router, prefix=settings.API_V1_PREFIX)
 app.include_router(graph.router, prefix=settings.API_V1_PREFIX)
+app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
+app.include_router(users.router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/")
 async def root():

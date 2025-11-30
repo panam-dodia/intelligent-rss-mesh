@@ -74,3 +74,26 @@ async def fetch_feed(feed_id: int, db: Session = Depends(get_db)):
         "articles_saved": saved_count,
         "message": f"Successfully fetched {saved_count} new articles"
     }
+
+@router.post("/fetch-all")
+async def fetch_all_feeds_now(db: Session = Depends(get_db)):
+    """Manually trigger fetch for all feeds"""
+    from app.services.feed_fetcher import FeedFetcher
+    from datetime import datetime
+    
+    feeds = db.query(Feed).filter(Feed.is_active == True).all()
+    total_saved = 0
+    
+    for feed in feeds:
+        fetcher = FeedFetcher(db)
+        articles = await fetcher.fetch_feed(feed.url)
+        saved_count = await fetcher.save_articles(articles)
+        total_saved += saved_count
+        
+        feed.last_fetched = datetime.now()
+        db.commit()
+    
+    return {
+        "message": f"Fetched from {len(feeds)} feeds",
+        "total_new_articles": total_saved
+    }

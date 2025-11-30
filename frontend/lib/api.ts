@@ -2,13 +2,36 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+// Create axios instance
 export const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-export const graphAPI = {
-  getKnowledgeGraph: (hours = 48, minSimilarity = 0.75) => 
-    api.get('/graph/knowledge-graph', { params: { hours, min_similarity: minSimilarity } }),
+// Add request interceptor to include token
+api.interceptors.request.use(
+  (config) => {
+    // Get token from localStorage on EVERY request
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+        console.log('Request interceptor: Adding token to request'); // DEBUG
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Auth API
+export const authAPI = {
+  register: (data: { email: string; username: string; password: string; full_name?: string }) =>
+    api.post('/auth/register', data),
+  login: (data: { email: string; password: string }) =>
+    api.post('/auth/login', data),
+  getMe: () => api.get('/auth/me'),
 };
 
 export const feedsAPI = {
@@ -42,4 +65,18 @@ export const synthesisAPI = {
   getTopCascades: (limit = 3) => api.get('/synthesis/top-cascades', { params: { limit } }),
   getCascadeSynthesis: (entity: string, hours = 48) => 
     api.get(`/synthesis/cascade/${encodeURIComponent(entity)}`, { params: { hours } }),
+};
+
+export const graphAPI = {
+  getKnowledgeGraph: (hours = 48, minSimilarity = 0.75) => 
+    api.get('/graph/knowledge-graph', { params: { hours, min_similarity: minSimilarity } }),
+};
+
+export const usersAPI = {
+  getPreferences: () => api.get('/users/preferences'),
+  updatePreferences: (prefs: any) => api.put('/users/preferences', prefs),
+  getAvailableFeeds: () => api.get('/users/feeds/available'),
+  getSubscribedFeeds: () => api.get('/users/feeds/subscribed'),
+  subscribeToFeed: (feedId: number) => api.post(`/users/feeds/${feedId}/subscribe`),
+  unsubscribeFromFeed: (feedId: number) => api.post(`/users/feeds/${feedId}/unsubscribe`),
 };

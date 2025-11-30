@@ -6,6 +6,8 @@ from datetime import datetime
 from app.db.database import get_db
 from app.models.article import Article
 from app.services.embedder import EmbeddingService
+from app.core.deps import get_current_active_user
+from app.models.user import User
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
@@ -47,13 +49,36 @@ async def get_articles(
     articles = query.order_by(Article.published_date.desc()).offset(skip).limit(limit).all()
     return articles
 
-@router.get("/{article_id}", response_model=ArticleResponse)
-async def get_article(article_id: int, db: Session = Depends(get_db)):
-    """Get a specific article"""
-    article = db.query(Article).filter(Article.id == article_id).first()
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    return article
+@router.get("/", response_model=List[ArticleResponse])
+async def get_articles(
+    skip: int = 0,
+    limit: int = 20,
+    source: Optional[str] = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get articles from user's subscribed feeds"""
+    # Get user's subscribed feed IDs
+    user = db.query(User).filter(User.id == current_user.id).first()
+    subscribed_feed_ids = [feed.id for feed in user.subscribed_feeds]
+    
+    # If no subscriptions, return empty
+    if not subscribed_feed_ids:
+        return []
+    
+    # Get articles from subscribed feeds only
+    query = db.query(Article).filter(
+        Article.source_domain.in_([
+            feed.url.split('/')[2] if '/' in feed.url else feed.url 
+            for feed in user.subscribed_feeds
+        ])
+    )
+    
+    if source:
+        query = query.filter(Article.source_domain == source)
+    
+    articles = query.order_by(Article.published_date.desc()).offset(skip).limit(limit).all()
+    return articles
 
 @router.get("/{article_id}/similar", response_model=List[SimilarArticle])
 async def get_similar_articles(article_id: int, limit: int = 10, db: Session = Depends(get_db)):

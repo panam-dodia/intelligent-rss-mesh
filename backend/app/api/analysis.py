@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.db.database import get_db
 from app.services.pattern_detector import PatternDetector
+from app.core.deps import get_current_active_user
+from app.models.user import User
+from app.models.article import Feed
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -15,7 +18,7 @@ async def get_cascades(hours: int = Query(48, ge=1, le=168), db: Session = Depen
     return {
         "time_window_hours": hours,
         "cascades_detected": len(cascades),
-        "cascades": cascades[:10]  # Top 10
+        "cascades": cascades[:10]
     }
 
 @router.get("/trending")

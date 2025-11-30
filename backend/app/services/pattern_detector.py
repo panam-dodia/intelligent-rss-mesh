@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict
 from collections import Counter
 import json
+from typing import List, Dict, Set
 
 class PatternDetector:
     def __init__(self, db: Session):
@@ -19,7 +20,7 @@ class PatternDetector:
             Article.published_date >= cutoff,
             Article.is_processed == True
         ).all()
-        
+    
         if not recent_articles:
             return []
         
