@@ -1,6 +1,9 @@
 import axios from 'axios';
 
+// This will work in both dev and production
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+console.log('API Base URL:', API_BASE_URL); // DEBUG - see what URL is being used
 
 // Create axios instance
 export const api = axios.create({

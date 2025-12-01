@@ -28,7 +28,7 @@ async def get_available_feeds(
             "url": feed.url,
             "title": feed.title,
             "category": feed.category,
-            "description": feed.description,
+            "description": feed.description or "",
             "is_subscribed": feed.id in subscribed_ids,
             "last_fetched": feed.last_fetched.isoformat() if feed.last_fetched else None
         }
@@ -49,7 +49,7 @@ async def get_subscribed_feeds(
             "url": feed.url,
             "title": feed.title,
             "category": feed.category,
-            "description": feed.description
+            "description": feed.description or ""
         }
         for feed in user.subscribed_feeds
     ]

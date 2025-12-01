@@ -38,41 +38,19 @@ async def get_articles(
     skip: int = 0,
     limit: int = 20,
     source: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    """Get articles with pagination and filtering"""
-    query = db.query(Article)
-    
-    if source:
-        query = query.filter(Article.source_domain == source)
-    
-    articles = query.order_by(Article.published_date.desc()).offset(skip).limit(limit).all()
-    return articles
-
-@router.get("/", response_model=List[ArticleResponse])
-async def get_articles(
-    skip: int = 0,
-    limit: int = 20,
-    source: Optional[str] = None,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Get articles from user's subscribed feeds"""
-    # Get user's subscribed feed IDs
     user = db.query(User).filter(User.id == current_user.id).first()
-    subscribed_feed_ids = [feed.id for feed in user.subscribed_feeds]
     
-    # If no subscriptions, return empty
-    if not subscribed_feed_ids:
-        return []
-    
-    # Get articles from subscribed feeds only
-    query = db.query(Article).filter(
-        Article.source_domain.in_([
-            feed.url.split('/')[2] if '/' in feed.url else feed.url 
-            for feed in user.subscribed_feeds
-        ])
-    )
+    # If no subscriptions, show all (for first-time users)
+    if not user.subscribed_feeds:
+        query = db.query(Article)
+    else:
+        # Get source domains from subscribed feeds
+        subscribed_domains = [feed.url.split('/')[2] if '/' in feed.url else feed.url.replace('https://', '').replace('http://', '').split('/')[0] for feed in user.subscribed_feeds]
+        query = db.query(Article).filter(Article.source_domain.in_(subscribed_domains))
     
     if source:
         query = query.filter(Article.source_domain == source)
