@@ -1,17 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
-from app.api import feeds, articles, processing, analysis, synthesis, graph, auth, users
-import asyncio
 from contextlib import asynccontextmanager
-from app.services.scheduler import background_scheduler
+import asyncio
+from app.core.config import settings
+from app.api import feeds, articles, processing, analysis, synthesis, auth, users
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Start background scheduler
+    # Startup: Start background scheduler WITHOUT BLOCKING
+    from app.services.scheduler import background_scheduler
+    
+    # Run scheduler in background task (non-blocking)
     task = asyncio.create_task(background_scheduler())
-    print("🎃 Background scheduler started")
-    yield
+    print("🎃 Background scheduler started (non-blocking)")
+    
+    yield  # App is ready to accept requests NOW
+    
     # Shutdown: Cancel the task
     task.cancel()
     print("👻 Background scheduler stopped")
@@ -32,25 +36,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health check
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
 # Include routers
+app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
+app.include_router(users.router, prefix=settings.API_V1_PREFIX)
 app.include_router(feeds.router, prefix=settings.API_V1_PREFIX)
 app.include_router(articles.router, prefix=settings.API_V1_PREFIX)
 app.include_router(processing.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analysis.router, prefix=settings.API_V1_PREFIX)
 app.include_router(synthesis.router, prefix=settings.API_V1_PREFIX)
-app.include_router(graph.router, prefix=settings.API_V1_PREFIX)
-app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
-app.include_router(users.router, prefix=settings.API_V1_PREFIX)
-
-@app.get("/")
-async def root():
-    return {
-        "message": "RSS Intelligence Mesh API",
-        "version": settings.VERSION,
-        "status": "running",
-        "docs": "/docs"
-    }
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}

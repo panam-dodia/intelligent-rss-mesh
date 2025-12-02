@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-import { Rss, Check, X, Radio } from 'lucide-react';
+import { Rss, Check, X, Radio, ArrowLeft } from 'lucide-react';
 import { usersAPI } from '@/lib/api';
-import SpookyLoader from '@/components/SpookyLoader';
+import Link from 'next/link';
 
 interface Feed {
   id: number;
@@ -21,47 +21,28 @@ export default function FeedsPage() {
   const { user, token, loading: authLoading } = useAuth();
   const router = useRouter();
   const [feeds, setFeeds] = useState<Feed[]>([]);
-  const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<number | null>(null);
 
   useEffect(() => {
-    // Wait for auth to finish loading
-    if (authLoading) {
-      console.log('Auth still loading...');
-      return;
-    }
-    
-    // Redirect if no user
-    if (!user) {
-      console.log('No user, redirecting to login');
+    if (!authLoading && !user) {
       router.push('/login');
       return;
     }
 
-    // CRITICAL: Only fetch when we have BOTH user AND token
     if (user && token) {
-      console.log('User and token ready, fetching feeds');
       fetchFeeds();
     }
   }, [user, token, authLoading, router]);
 
   const fetchFeeds = async () => {
     try {
-      console.log('Making request to get available feeds...');
       const response = await usersAPI.getAvailableFeeds();
-      console.log('Feeds response:', response.data);
       setFeeds(response.data);
     } catch (error: any) {
       console.error('Error fetching feeds:', error);
-      console.error('Error response:', error.response);
-      
-      // If 401, redirect to login
       if (error.response?.status === 401) {
-        console.log('Got 401, redirecting to login');
         router.push('/login');
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -73,7 +54,6 @@ export default function FeedsPage() {
       } else {
         await usersAPI.subscribeToFeed(feedId);
       }
-      // Update local state
       setFeeds(feeds.map(feed => 
         feed.id === feedId 
           ? { ...feed, is_subscribed: !isSubscribed }
@@ -86,8 +66,13 @@ export default function FeedsPage() {
     }
   };
 
-  if (authLoading || loading) {
-    return <SpookyLoader message="Loading feeds from the crypt..." />;
+  // Simple loading
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-gray-400">Loading...</div>
+      </div>
+    );
   }
 
   if (!user) {
@@ -95,11 +80,20 @@ export default function FeedsPage() {
   }
 
   const subscribedCount = feeds.filter(f => f.is_subscribed).length;
+  const hasSubscriptions = subscribedCount > 0;
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Header with Back Button */}
       <div className="text-center py-8 dripping-effect">
+        <Link 
+          href="/"
+          className="inline-flex items-center space-x-2 text-gray-400 hover:text-red-400 transition-colors mb-4"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Back to Dashboard</span>
+        </Link>
+        
         <Rss className="w-16 h-16 text-red-600 mx-auto mb-4 spectral-glow" />
         <h1 className="text-4xl font-bold mb-2">
           <span className="blood-text">FEED SUMMONING CHAMBER</span>
@@ -111,6 +105,19 @@ export default function FeedsPage() {
           {subscribedCount} of {feeds.length} feeds summoned
         </p>
       </div>
+
+      {/* Action Button */}
+      {hasSubscriptions && (
+        <div className="flex justify-center">
+          <Link
+            href="/"
+            className="px-8 py-3 bg-red-900 hover:bg-red-800 text-white rounded-lg font-bold transition-all border border-red-700 flex items-center space-x-2"
+          >
+            <Check className="w-5 h-5" />
+            <span>View Your Feed ({subscribedCount} selected)</span>
+          </Link>
+        </div>
+      )}
 
       {/* Feeds Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -172,7 +179,7 @@ export default function FeedsPage() {
         ))}
       </div>
 
-      {subscribedCount === 0 && (
+      {!hasSubscriptions && (
         <div className="haunted-card text-center py-12">
           <p className="text-gray-500 ghost-text text-lg">
             No feeds summoned yet. Subscribe to at least one feed to begin your dark journey...

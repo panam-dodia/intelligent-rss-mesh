@@ -7,36 +7,33 @@ import { Activity, TrendingUp, Database, Zap } from 'lucide-react';
 import StatsCard from '@/components/StatsCard';
 import CascadeCard from '@/components/CascadeCard';
 import SynthesisModal from '@/components/SynthesisModal';
-import LoadingSkeleton from '@/components/LoadingSkeleton';
-import KnowledgeGraph from '@/components/KnowledgeGraph';
-import SpookyLoader from '@/components/SpookyLoader';
-import { processingAPI, synthesisAPI, analysisAPI, graphAPI } from '@/lib/api';
+import { processingAPI, synthesisAPI, analysisAPI } from '@/lib/api';
 import { Cascade, Synthesis } from '@/types';
+import Link from 'next/link';
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // Redirect to login if not authenticated
   useEffect(() => {
-    console.log('Page auth check:', { user, authLoading });
     if (!authLoading && !user) {
-      console.log('Redirecting to login');
       router.push('/login');
     }
   }, [user, authLoading, router]);
 
-  // Show loading while checking auth
+  // Simple loading (not SpookyLoader)
   if (authLoading) {
-    return <SpookyLoader message="Awakening the spirits..." />;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-gray-400">Loading...</div>
+      </div>
+    );
   }
 
-  // If not authenticated, don't render (will redirect)
   if (!user) {
     return null;
   }
 
-  // Main dashboard component
   return <Dashboard />;
 }
 
@@ -44,42 +41,71 @@ function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [syntheses, setSyntheses] = useState<Synthesis[]>([]);
   const [cascades, setCascades] = useState<Cascade[]>([]);
-  const [graphData, setGraphData] = useState<any>(null);
   const [selectedSynthesis, setSelectedSynthesis] = useState<Synthesis | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingSynthesis, setLoadingSynthesis] = useState<string | null>(null);
 
   useEffect(() => {
+    // Fetch data once on mount
     fetchData();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+
+    // Auto-refresh every 60 seconds (reduced from 30s for better performance)
+    const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
     try {
-      const [statsRes, synthesisRes, cascadesRes, graphRes] = await Promise.all([
+      console.log('🔍 Starting data fetch...');
+
+      // Fetch fast APIs in parallel
+      const [statsRes, synthesisRes, cascadesRes] = await Promise.all([
         processingAPI.getStats(),
         synthesisAPI.getTopCascades(5),
-        analysisAPI.getCascades(48),
-        graphAPI.getKnowledgeGraph(48, 0.75)
+        analysisAPI.getCascades(1),
       ]);
+
+      console.log('📊 Stats response:', statsRes.data);
+      console.log('🎯 Synthesis response:', synthesisRes.data);
+      console.log('📈 Cascades response:', cascadesRes.data);
 
       setStats(statsRes.data);
       setSyntheses(synthesisRes.data.syntheses);
       setCascades(cascadesRes.data.cascades);
-      setGraphData(graphRes.data);
+
+      console.log('✅ State set - syntheses:', synthesisRes.data.syntheses?.length, 'cascades:', cascadesRes.data.cascades?.length);
+
     } catch (error) {
       console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Show spooky loader while loading data
-  if (loading) {
-    return <SpookyLoader message="Summoning intelligence from the abyss..." />;
-  }
+  const handleViewSynthesis = async (entity: string) => {
+    // Check if synthesis already exists
+    const existing = syntheses.find(s => s.entity === entity);
+    if (existing) {
+      setSelectedSynthesis(existing);
+      return;
+    }
 
+    // Fetch synthesis on-demand
+    setLoadingSynthesis(entity);
+    try {
+      console.log(`🔮 Fetching synthesis for: ${entity}`);
+      const response = await synthesisAPI.getCascadeSynthesis(entity);
+      const newSynthesis = response.data;
+      setSelectedSynthesis(newSynthesis);
+
+      // Optionally cache it
+      setSyntheses([...syntheses, newSynthesis]);
+    } catch (error) {
+      console.error('Error fetching synthesis:', error);
+      alert('Failed to generate synthesis. Please try again.');
+    } finally {
+      setLoadingSynthesis(null);
+    }
+  };
+
+  // Page shows immediately, even before data loads
   return (
     <div className="space-y-8">
       {/* Hero Section */}
@@ -94,7 +120,7 @@ function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      {stats && (
+      {stats ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
             title="Total Articles"
@@ -122,13 +148,8 @@ function Dashboard() {
             subtitle="Intelligence summoned"
           />
         </div>
-      )}
-
-      {/* Knowledge Graph */}
-      {graphData && graphData.nodes.length > 0 && (
-        <div>
-          <KnowledgeGraph data={graphData} />
-        </div>
+      ) : (
+        <div className="text-center text-gray-500">Loading stats...</div>
       )}
 
       {/* AI Syntheses Section */}
@@ -148,16 +169,23 @@ function Dashboard() {
                 <CascadeCard
                   key={idx}
                   cascade={cascade}
-                  onViewSynthesis={() => setSelectedSynthesis(synthesis)}
+                  onViewSynthesis={() => handleViewSynthesis(cascade.entity)}
+                  isLoading={loadingSynthesis === cascade.entity}
                 />
               ) : null;
             })}
           </div>
         ) : (
           <div className="haunted-card text-center py-12">
-            <p className="text-gray-500 ghost-text">
+            <p className="text-gray-500 ghost-text mb-4">
               No cascades detected yet. The spirits are gathering...
             </p>
+            <Link
+              href="/feeds"
+              className="inline-block px-6 py-3 bg-red-900 hover:bg-red-800 text-white rounded-lg transition"
+            >
+              Subscribe to Feeds
+            </Link>
           </div>
         )}
       </div>
@@ -176,6 +204,8 @@ function Dashboard() {
               <CascadeCard
                 key={idx}
                 cascade={cascade}
+                onViewSynthesis={() => handleViewSynthesis(cascade.entity)}
+                isLoading={loadingSynthesis === cascade.entity}
               />
             ))}
           </div>

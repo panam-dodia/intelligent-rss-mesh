@@ -1,39 +1,35 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
+from urllib.parse import urlparse
 from app.db.database import get_db
-from app.models.article import Article
-from app.services.embedder import EmbeddingService
-from app.core.deps import get_current_active_user
+from app.models.article import Article, Feed
 from app.models.user import User
+from app.core.deps import get_current_active_user
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
-class ArticleResponse(BaseModel):
-    id: int
-    title: str
-    url: str
-    summary: str | None
-    author: str | None
-    source_domain: str
-    published_date: datetime | None
-    is_processed: bool
-    entities: dict | None
-    topics: dict | None
-    sentiment_score: float | None
+def extract_root_domain(url: str) -> str:
+    """Extract root domain from URL
+    Examples:
+      https://feeds.arstechnica.com/... -> arstechnica.com
+      https://www.wired.com/feed/rss -> wired.com
+      https://techcrunch.com/feed/ -> techcrunch.com
+    """
+    parsed = urlparse(url)
+    domain = parsed.netloc  # e.g., feeds.arstechnica.com
     
-    class Config:
-        from_attributes = True
+    # Split by dots
+    parts = domain.split('.')
+    
+    # Get last two parts (root domain)
+    if len(parts) >= 2:
+        return '.'.join(parts[-2:])  # e.g., arstechnica.com
+    
+    return domain
 
-class SimilarArticle(BaseModel):
-    article_id: int
-    title: str
-    url: str
-    similarity_score: float
-
-@router.get("/", response_model=List[ArticleResponse])
+@router.get("/")
 async def get_articles(
     skip: int = 0,
     limit: int = 20,
@@ -41,61 +37,92 @@ async def get_articles(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get articles from user's subscribed feeds"""
+    """Get articles from user's subscribed feeds (last 1 hour only)"""
     user = db.query(User).filter(User.id == current_user.id).first()
     
-    # If no subscriptions, show all (for first-time users)
+    # Only show articles from last 1 hour
+    one_hour_ago = datetime.now() - timedelta(hours=1)
+    
+    # If no subscriptions, show ALL recent articles
     if not user.subscribed_feeds:
-        query = db.query(Article)
+        print(f"📊 User {current_user.username} has no subscriptions - showing all articles")
+        query = db.query(Article).filter(Article.published_date >= one_hour_ago)
     else:
-        # Get source domains from subscribed feeds
-        subscribed_domains = [feed.url.split('/')[2] if '/' in feed.url else feed.url.replace('https://', '').replace('http://', '').split('/')[0] for feed in user.subscribed_feeds]
-        query = db.query(Article).filter(Article.source_domain.in_(subscribed_domains))
+        # Build list of possible source domains from subscribed feeds
+        subscribed_domains = []
+        for feed in user.subscribed_feeds:
+            if not feed.url or feed.url == 'https://example.com/':
+                continue  # Skip empty/test feeds
+            
+            # Extract root domain
+            root_domain = extract_root_domain(feed.url)
+            subscribed_domains.append(root_domain)
+            
+            # Also add with www. prefix
+            www_domain = f"www.{root_domain}"
+            subscribed_domains.append(www_domain)
+        
+        print(f"📊 User {current_user.username} subscribed domains: {subscribed_domains}")
+        
+        # Filter articles where source_domain matches any subscribed domain
+        query = db.query(Article).filter(
+            Article.published_date >= one_hour_ago,
+            Article.source_domain.in_(subscribed_domains)
+        )
     
     if source:
         query = query.filter(Article.source_domain == source)
     
     articles = query.order_by(Article.published_date.desc()).offset(skip).limit(limit).all()
+    
+    print(f"📰 Returning {len(articles)} articles for user {current_user.username}")
+    
     return articles
 
-@router.get("/{article_id}/similar", response_model=List[SimilarArticle])
-async def get_similar_articles(article_id: int, limit: int = 10, db: Session = Depends(get_db)):
-    """Find articles similar to the given article"""
+@router.get("/{article_id}")
+async def get_article(
+    article_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get a specific article by ID"""
+    article = db.query(Article).filter(Article.id == article_id).first()
+    
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    
+    return article
+
+@router.get("/{article_id}/similar")
+async def get_similar_articles(
+    article_id: int,
+    limit: int = 5,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get similar articles based on embeddings"""
+    from app.services.embedder import Embedder
+    
     article = db.query(Article).filter(Article.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     
-    if not article.is_processed:
-        raise HTTPException(status_code=400, detail="Article not yet processed")
+    embedder = Embedder()
+    similar = embedder.find_similar(article.id, limit=limit)
     
-    embedder = EmbeddingService()
-    results = embedder.search_similar_to_article(article_id, limit)
-    
-    similar_articles = []
-    for result in results:
-        similar_articles.append(SimilarArticle(
-            article_id=result.payload['article_id'],
-            title=result.payload['title'],
-            url=db.query(Article).filter(Article.id == result.payload['article_id']).first().url,
-            similarity_score=result.score
-        ))
-    
-    return similar_articles
+    return similar
 
 @router.post("/search")
-async def search_articles(query: str = Query(..., min_length=3)):
-    """Search for articles by text query"""
-    embedder = EmbeddingService()
-    results = embedder.search_similar(query, limit=20)
+async def search_articles(
+    query: str,
+    limit: int = 10,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Semantic search for articles"""
+    from app.services.embedder import Embedder
     
-    return {
-        "query": query,
-        "results": [
-            {
-                "article_id": r.payload['article_id'],
-                "title": r.payload['title'],
-                "score": r.score
-            }
-            for r in results
-        ]
-    }
+    embedder = Embedder()
+    results = embedder.semantic_search(query, limit=limit)
+    
+    return results

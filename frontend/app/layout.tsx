@@ -17,7 +17,6 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <AuthProvider>
-          <div className="fog-overlay"></div>
           <div className="relative z-10">
             <Header />
             <main className="container mx-auto px-6 py-8">

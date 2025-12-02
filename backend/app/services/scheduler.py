@@ -1,40 +1,35 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.db.database import SessionLocal
 from app.models.article import Feed, Article
 from app.services.feed_fetcher import FeedFetcher
 from app.api.processing import process_article_task
 
-async def process_unprocessed_articles():
-    """Process all unprocessed articles in batches"""
+async def cleanup_old_articles():
+    """Delete articles older than 1 hour"""
     db = SessionLocal()
     try:
-        unprocessed = db.query(Article).filter(Article.is_processed == False).all()
+        one_hour_ago = datetime.now() - timedelta(hours=1)
         
-        if not unprocessed:
-            print("✨ All articles already processed")
-            return
+        # Count before delete
+        old_count = db.query(Article).filter(
+            Article.published_date < one_hour_ago
+        ).count()
         
-        print(f"🔮 Found {len(unprocessed)} unprocessed articles")
-        
-        # Process in batches of 20
-        for i in range(0, len(unprocessed), 20):
-            batch = unprocessed[i:i+20]
-            print(f"Processing batch {i//20 + 1} ({len(batch)} articles)...")
+        if old_count > 0:
+            # Delete old articles
+            db.query(Article).filter(
+                Article.published_date < one_hour_ago
+            ).delete()
             
-            for article in batch:
-                try:
-                    process_article_task(article.id)
-                except Exception as e:
-                    print(f"✗ Error processing {article.id}: {str(e)}")
-            
-            # Small delay between batches to avoid overwhelming the system
-            await asyncio.sleep(2)
-        
-        print(f"✅ Finished processing {len(unprocessed)} articles")
+            db.commit()
+            print(f"🗑️ Deleted {old_count} articles older than 1 hour")
+        else:
+            print(f"✨ No old articles to delete")
     except Exception as e:
-        print(f"Error in process_unprocessed_articles: {str(e)}")
+        print(f"Error cleaning up articles: {str(e)}")
+        db.rollback()
     finally:
         db.close()
 
@@ -49,16 +44,12 @@ async def fetch_all_feeds():
         for feed in feeds:
             print(f"🎃 Fetching feed: {feed.title}")
             
-            # Get articles before fetch
-            before_count = db.query(Article).count()
-            
             fetcher = FeedFetcher(db)
             articles = await fetcher.fetch_feed(feed.url)
             saved_count = await fetcher.save_articles(articles)
             
             # Get new article IDs
             if saved_count > 0:
-                after_count = db.query(Article).count()
                 new_articles = db.query(Article).order_by(Article.id.desc()).limit(saved_count).all()
                 new_article_ids.extend([a.id for a in new_articles])
             
@@ -70,14 +61,26 @@ async def fetch_all_feeds():
             
             print(f"✅ Saved {saved_count} new articles from {feed.title}")
         
-        # Process newly fetched articles immediately
+        # LIMIT: Only process first 100 new articles
         if new_article_ids:
-            print(f"🔮 Processing {len(new_article_ids)} newly fetched articles...")
-            for article_id in new_article_ids:
-                try:
-                    process_article_task(article_id)
-                except Exception as e:
-                    print(f"✗ Error processing {article_id}: {str(e)}")
+            articles_to_process = new_article_ids[:20]
+            if len(new_article_ids) > 100:
+                print(f"⚠️ Limited processing to first 100 of {len(new_article_ids)} new articles")
+            else:
+                print(f"🔮 Processing {len(articles_to_process)} new articles...")
+            
+            # Process in chunks of 10
+            for i in range(0, len(articles_to_process), 10):
+                batch = articles_to_process[i:i+10]
+                for article_id in batch:
+                    try:
+                        process_article_task(article_id)
+                    except Exception as e:
+                        print(f"✗ Error processing {article_id}: {str(e)}")
+                await asyncio.sleep(0.5)
+        
+        # Clean up old articles after processing
+        await cleanup_old_articles()
         
         print("🌙 All feeds fetched and processed!")
     except Exception as e:
@@ -87,12 +90,16 @@ async def fetch_all_feeds():
 
 async def background_scheduler():
     """Run scheduled tasks"""
-    # On startup: process all unprocessed articles
-    print("🎃 Starting background scheduler...")
-    print("🔮 Processing existing unprocessed articles...")
-    await process_unprocessed_articles()
+    print("🎃 Background scheduler starting...")
     
-    # Then start the fetch loop
+    # Clean up old articles IMMEDIATELY on startup
+    print("🧹 Cleaning up old articles on startup...")
+    await cleanup_old_articles()
+    
+    # Wait 5 seconds before first fetch
+    await asyncio.sleep(5)
+    
+    # Start the fetch loop
     while True:
         print("🕷️ Starting scheduled feed fetch...")
         await fetch_all_feeds()

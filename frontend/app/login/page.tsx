@@ -72,6 +72,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-gray-800 border border-red-900/30 rounded px-4 py-2 text-white focus:outline-none focus:border-red-600"
                 required
+                autoComplete="off"  // ADD THIS
               />
             </div>
 
@@ -117,6 +118,7 @@ export default function LoginPage() {
                 className="w-full bg-gray-800 border border-red-900/30 rounded px-4 py-2 text-white focus:outline-none focus:border-red-600"
                 required
                 minLength={6}
+                autoComplete="new-password"  // ADD THIS
               />
             </div>
 

@@ -29,70 +29,99 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Only run on client side
     if (typeof window === 'undefined') return;
-    
-    // Check for existing token
-    const savedToken = localStorage.getItem('access_token');
+
+    // Use sessionStorage instead of localStorage for session-only auth
+    // This means user is logged out when tab/browser closes
+    const savedToken = sessionStorage.getItem('access_token');
+    const cachedUser = sessionStorage.getItem('cached_user');
     console.log('Saved token on mount:', savedToken); // DEBUG
-    
+
     if (savedToken) {
-        // Don't manually set header - interceptor will handle it
         setToken(savedToken);
-        fetchUser();
+
+        // Use cached user data if available (FAST PATH)
+        if (cachedUser) {
+          try {
+            const userData = JSON.parse(cachedUser);
+            setUser(userData);
+            setLoading(false);
+            console.log('✅ Using cached user data - instant load!');
+
+            // Optionally refresh user data in background (silent)
+            fetchUser(true);
+          } catch (e) {
+            // If cache is corrupted, fetch normally
+            fetchUser();
+          }
+        } else {
+          // No cache, fetch from API
+          fetchUser();
+        }
     } else {
         setLoading(false);
     }
   }, []);
 
-  const fetchUser = async () => {
+  const fetchUser = async (silent = false) => {
     try {
       const response = await authAPI.getMe();
       setUser(response.data);
+
+      // Cache the user data in sessionStorage for instant future loads
+      sessionStorage.setItem('cached_user', JSON.stringify(response.data));
+      console.log('✅ User data cached for future loads');
     } catch (error) {
       console.error('Failed to fetch user:', error);
-      // Clear invalid token
-      localStorage.removeItem('access_token');
+      // Clear invalid token and cache
+      sessionStorage.removeItem('access_token');
+      sessionStorage.removeItem('cached_user');
       setToken(null);
       delete api.defaults.headers.common['Authorization'];
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
   const login = async (email: string, password: string) => {
     const response = await authAPI.login({ email, password });
     const { access_token, user: userData } = response.data;
-    
+
     console.log('Login response:', { access_token, userData });
-    
-    localStorage.setItem('access_token', access_token);
+
+    sessionStorage.setItem('access_token', access_token);
+    sessionStorage.setItem('cached_user', JSON.stringify(userData)); // Cache user data
     // Don't manually set header - interceptor will handle it
     setToken(access_token);
     setUser(userData);
-    
+
     console.log('State updated:', { token: access_token, user: userData });
   };
 
   const register = async (email: string, username: string, password: string, fullName?: string) => {
-    const response = await authAPI.register({ 
-        email, 
-        username, 
-        password, 
-        full_name: fullName 
+    const response = await authAPI.register({
+        email,
+        username,
+        password,
+        full_name: fullName
     });
     const { access_token, user: userData } = response.data;
-    
+
     console.log('Register response:', { access_token, userData });
-    
-    localStorage.setItem('access_token', access_token);
+
+    sessionStorage.setItem('access_token', access_token);
+    sessionStorage.setItem('cached_user', JSON.stringify(userData)); // Cache user data
     // Don't manually set header - interceptor will handle it
     setToken(access_token);
     setUser(userData);
-    
+
     console.log('State updated:', { token: access_token, user: userData });
   };
 
   const logout = () => {
-    localStorage.removeItem('access_token');
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('cached_user'); // Clear cache on logout
     // Don't need to remove from axios - interceptor handles it
     setToken(null);
     setUser(null);

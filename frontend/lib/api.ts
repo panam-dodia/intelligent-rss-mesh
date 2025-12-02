@@ -13,9 +13,9 @@ export const api = axios.create({
 // Add request interceptor to include token
 api.interceptors.request.use(
   (config) => {
-    // Get token from localStorage on EVERY request
+    // Get token from sessionStorage on EVERY request
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('access_token');
+      const token = sessionStorage.getItem('access_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
         console.log('Request interceptor: Adding token to request'); // DEBUG
@@ -68,11 +68,6 @@ export const synthesisAPI = {
   getTopCascades: (limit = 3) => api.get('/synthesis/top-cascades', { params: { limit } }),
   getCascadeSynthesis: (entity: string, hours = 48) => 
     api.get(`/synthesis/cascade/${encodeURIComponent(entity)}`, { params: { hours } }),
-};
-
-export const graphAPI = {
-  getKnowledgeGraph: (hours = 48, minSimilarity = 0.75) => 
-    api.get('/graph/knowledge-graph', { params: { hours, min_similarity: minSimilarity } }),
 };
 
 export const usersAPI = {

@@ -6,9 +6,10 @@ import { Cascade } from '@/types';
 interface CascadeCardProps {
   cascade: Cascade;
   onViewSynthesis?: () => void;
+  isLoading?: boolean;
 }
 
-export default function CascadeCard({ cascade, onViewSynthesis }: CascadeCardProps) {
+export default function CascadeCard({ cascade, onViewSynthesis, isLoading }: CascadeCardProps) {
   const getTypeColor = (type: string) => {
     const colors: Record<string, string> = {
       'PERSON': 'text-blue-400',
@@ -80,12 +81,15 @@ export default function CascadeCard({ cascade, onViewSynthesis }: CascadeCardPro
         </div>
       </div>
 
-      <button 
-        className="mt-4 w-full cursed-button text-sm"
-        onClick={onViewSynthesis}
-      >
-        View AI Synthesis
-      </button>
+      {onViewSynthesis && (
+        <button
+          className="mt-4 w-full cursed-button text-sm"
+          onClick={onViewSynthesis}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Summoning AI...' : 'View AI Synthesis'}
+        </button>
+      )}
     </div>
   );
 }
