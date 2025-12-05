@@ -111,11 +111,11 @@ function Dashboard() {
       {/* Hero Section */}
       <div className="text-center py-12 dripping-effect">
         <h1 className="text-5xl font-bold mb-4">
-          <span className="blood-text">RSS NECROMANCY</span>
+          <span className="blood-text">RSS Intelligence Mesh</span>
         </h1>
         <p className="text-xl text-gray-400 ghost-text max-w-2xl mx-auto">
-          Resurrecting the dead art of RSS feeds through dark AI magic.
-          Watch as information cascades spread like spectral whispers across the digital realm.
+          Advanced feed aggregation and cascade analysis.
+          Track emerging narratives across distributed sources.
         </p>
       </div>
 
@@ -126,7 +126,7 @@ function Dashboard() {
             title="Total Articles"
             value={stats.total_articles}
             icon={Database}
-            subtitle="Souls collected"
+            subtitle="In database"
           />
           <StatsCard
             title="Processed"
@@ -138,14 +138,14 @@ function Dashboard() {
             title="Cascades Detected"
             value={cascades.length}
             icon={TrendingUp}
-            subtitle="Information spreading"
+            subtitle="Active narratives"
             danger
           />
           <StatsCard
             title="AI Syntheses"
             value={syntheses.length}
             icon={Zap}
-            subtitle="Intelligence summoned"
+            subtitle="Generated insights"
           />
         </div>
       ) : (
@@ -155,9 +155,9 @@ function Dashboard() {
       {/* AI Syntheses Section */}
       <div>
         <div className="flex items-center space-x-3 mb-6">
-          <Zap className="w-6 h-6 text-purple-500 spectral-glow" />
+          <Zap className="w-6 h-6 text-slate-400 spectral-glow" />
           <h2 className="text-2xl font-bold blood-text">
-            AI-Summoned Intelligence
+            Intelligence Synthesis
           </h2>
         </div>
 
@@ -178,13 +178,32 @@ function Dashboard() {
         ) : (
           <div className="haunted-card text-center py-12">
             <p className="text-gray-500 ghost-text mb-4">
-              No cascades detected yet. The spirits are gathering...
+              No cascades detected yet. Analysis in progress...
             </p>
+
+            {stats && stats.total_articles > 0 && (
+              <div className="max-w-md mx-auto mb-6">
+                <div className="flex justify-between text-sm text-gray-400 mb-2">
+                  <span>Processing articles...</span>
+                  <span>{stats.processed} / {stats.total_articles}</span>
+                </div>
+                <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-slate-700 via-slate-500 to-slate-700 transition-all duration-500"
+                    style={{ width: `${stats.processing_rate || '0%'}` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Cascades will appear once enough articles are analyzed
+                </p>
+              </div>
+            )}
+
             <Link
               href="/feeds"
-              className="inline-block px-6 py-3 bg-red-900 hover:bg-red-800 text-white rounded-lg transition"
+              className="inline-block px-6 py-3 cursed-button"
             >
-              Subscribe to Feeds
+              Configure Feeds
             </Link>
           </div>
         )}
@@ -194,9 +213,9 @@ function Dashboard() {
       {cascades.length > syntheses.length && (
         <div>
           <div className="flex items-center space-x-3 mb-6">
-            <TrendingUp className="w-6 h-6 text-red-500 spectral-glow" />
+            <TrendingUp className="w-6 h-6 text-slate-400 spectral-glow" />
             <h2 className="text-2xl font-bold blood-text">
-              All Information Cascades
+              Active Cascades
             </h2>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">

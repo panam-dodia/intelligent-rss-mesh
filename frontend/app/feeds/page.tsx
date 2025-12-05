@@ -86,23 +86,23 @@ export default function FeedsPage() {
     <div className="space-y-8">
       {/* Header with Back Button */}
       <div className="text-center py-8 dripping-effect">
-        <Link 
+        <Link
           href="/"
-          className="inline-flex items-center space-x-2 text-gray-400 hover:text-red-400 transition-colors mb-4"
+          className="inline-flex items-center space-x-2 text-gray-400 hover:text-slate-300 transition-colors mb-4"
         >
           <ArrowLeft className="w-5 h-5" />
           <span>Back to Dashboard</span>
         </Link>
-        
-        <Rss className="w-16 h-16 text-red-600 mx-auto mb-4 spectral-glow" />
+
+        <Rss className="w-16 h-16 text-slate-400 mx-auto mb-4 spectral-glow" />
         <h1 className="text-4xl font-bold mb-2">
-          <span className="blood-text">FEED SUMMONING CHAMBER</span>
+          <span className="blood-text">Feed Management</span>
         </h1>
         <p className="text-xl text-gray-400 ghost-text">
-          Choose which dark sources shall feed your intelligence
+          Configure your information sources
         </p>
         <p className="text-sm text-gray-500 mt-2">
-          {subscribedCount} of {feeds.length} feeds summoned
+          {subscribedCount} of {feeds.length} feeds active
         </p>
       </div>
 
@@ -111,10 +111,10 @@ export default function FeedsPage() {
         <div className="flex justify-center">
           <Link
             href="/"
-            className="px-8 py-3 bg-red-900 hover:bg-red-800 text-white rounded-lg font-bold transition-all border border-red-700 flex items-center space-x-2"
+            className="px-8 py-3 cursed-button flex items-center space-x-2"
           >
             <Check className="w-5 h-5" />
-            <span>View Your Feed ({subscribedCount} selected)</span>
+            <span>View Dashboard ({subscribedCount} active)</span>
           </Link>
         </div>
       )}
@@ -125,13 +125,13 @@ export default function FeedsPage() {
           <div
             key={feed.id}
             className={`haunted-card transition-all ${
-              feed.is_subscribed ? 'border-red-600 bg-red-900/10' : ''
+              feed.is_subscribed ? 'border-slate-500/50 bg-slate-800/10' : ''
             }`}
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
-                  <Radio className={`w-5 h-5 ${feed.is_subscribed ? 'text-red-500 animate-pulse' : 'text-gray-600'}`} />
+                  <Radio className={`w-5 h-5 ${feed.is_subscribed ? 'text-slate-400 animate-pulse' : 'text-gray-600'}`} />
                   <h3 className="text-lg font-bold text-white">
                     {feed.title}
                   </h3>
@@ -146,7 +146,7 @@ export default function FeedsPage() {
                 )}
                 {feed.last_fetched && (
                   <p className="text-xs text-gray-600 mt-2">
-                    Last summoned: {new Date(feed.last_fetched).toLocaleDateString()}
+                    Last fetched: {new Date(feed.last_fetched).toLocaleDateString()}
                   </p>
                 )}
               </div>
@@ -155,10 +155,10 @@ export default function FeedsPage() {
             <button
               onClick={() => toggleSubscription(feed.id, feed.is_subscribed)}
               disabled={updating === feed.id}
-              className={`w-full py-2 px-4 rounded-lg font-bold transition-all flex items-center justify-center space-x-2 ${
+              className={`w-full py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 ${
                 feed.is_subscribed
-                  ? 'bg-red-900 hover:bg-red-800 text-white border border-red-700'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700'
+                  ? 'cursed-button'
+                  : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-slate-700/40'
               }`}
             >
               {updating === feed.id ? (
@@ -166,12 +166,12 @@ export default function FeedsPage() {
               ) : feed.is_subscribed ? (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>Subscribed</span>
+                  <span>Active</span>
                 </>
               ) : (
                 <>
                   <X className="w-4 h-4" />
-                  <span>Subscribe</span>
+                  <span>Activate</span>
                 </>
               )}
             </button>
@@ -182,7 +182,7 @@ export default function FeedsPage() {
       {!hasSubscriptions && (
         <div className="haunted-card text-center py-12">
           <p className="text-gray-500 ghost-text text-lg">
-            No feeds summoned yet. Subscribe to at least one feed to begin your dark journey...
+            No feeds configured yet. Activate at least one feed to begin tracking information cascades.
           </p>
         </div>
       )}

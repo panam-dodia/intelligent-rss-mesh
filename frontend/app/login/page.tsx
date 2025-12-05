@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-import { Skull, Mail, Lock, User } from 'lucide-react';
-import Link from 'next/link';
+import { Mail, Lock, User } from 'lucide-react';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -14,6 +13,7 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const { login, register } = useAuth();
   const router = useRouter();
@@ -22,6 +22,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setLoadingMessage('Authenticating...');
 
     try {
         console.log('Attempting login...'); // DEBUG
@@ -31,11 +32,13 @@ export default function LoginPage() {
         await register(email, username, password, fullName);
         }
         console.log('Login successful, redirecting...'); // DEBUG
+        setLoadingMessage('Loading dashboard...');
         router.push('/');
     } catch (err: any) {
         console.error('Login error:', err); // DEBUG
         setError(err.response?.data?.detail || 'Authentication failed');
-        setLoading(false); // IMPORTANT: Stop loading on error
+        setLoading(false);
+        setLoadingMessage('');
     }
     // Don't set loading false on success - let redirect happen
     };
@@ -44,19 +47,21 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center py-12">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <Skull className="w-16 h-16 text-red-600 mx-auto mb-4 spectral-glow" />
+          <div className="w-16 h-16 mx-auto mb-4 border-2 border-slate-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-slate-500 rounded-full"></div>
+          </div>
           <h1 className="text-4xl font-bold blood-text mb-2">
-            {isLogin ? 'ENTER THE CRYPT' : 'JOIN THE UNDEAD'}
+            {isLogin ? 'Access Intelligence Mesh' : 'Create Account'}
           </h1>
           <p className="text-gray-400 ghost-text">
-            {isLogin ? 'Return to the realm of knowledge' : 'Begin your dark journey'}
+            {isLogin ? 'Monitor distributed information flows' : 'Begin tracking information cascades'}
           </p>
         </div>
 
         <div className="haunted-card">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-900/20 border border-red-600 rounded p-3 text-sm text-red-400">
+              <div className="bg-red-900/20 border border-red-700/50 rounded p-3 text-sm text-red-300">
                 {error}
               </div>
             )}
@@ -70,9 +75,9 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-gray-800 border border-red-900/30 rounded px-4 py-2 text-white focus:outline-none focus:border-red-600"
+                className="w-full bg-gray-800 border border-slate-700/40 rounded px-4 py-2 text-white focus:outline-none focus:border-slate-500"
                 required
-                autoComplete="off"  // ADD THIS
+                autoComplete="off"
               />
             </div>
 
@@ -87,7 +92,7 @@ export default function LoginPage() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-gray-800 border border-red-900/30 rounded px-4 py-2 text-white focus:outline-none focus:border-red-600"
+                    className="w-full bg-gray-800 border border-slate-700/40 rounded px-4 py-2 text-white focus:outline-none focus:border-slate-500"
                     required
                   />
                 </div>
@@ -100,7 +105,7 @@ export default function LoginPage() {
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full bg-gray-800 border border-red-900/30 rounded px-4 py-2 text-white focus:outline-none focus:border-red-600"
+                    className="w-full bg-gray-800 border border-slate-700/40 rounded px-4 py-2 text-white focus:outline-none focus:border-slate-500"
                   />
                 </div>
               </>
@@ -115,10 +120,10 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-gray-800 border border-red-900/30 rounded px-4 py-2 text-white focus:outline-none focus:border-red-600"
+                className="w-full bg-gray-800 border border-slate-700/40 rounded px-4 py-2 text-white focus:outline-none focus:border-slate-500"
                 required
                 minLength={6}
-                autoComplete="new-password"  // ADD THIS
+                autoComplete="new-password"
               />
             </div>
 
@@ -127,8 +132,19 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full cursed-button"
             >
-              {loading ? 'Summoning...' : isLogin ? 'Enter' : 'Arise'}
+              {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
             </button>
+
+            {loading && (
+              <div className="space-y-3">
+                <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-slate-700 via-slate-500 to-slate-700 animate-pulse"></div>
+                </div>
+                <p className="text-center text-sm text-gray-400 animate-pulse">
+                  {loadingMessage}
+                </p>
+              </div>
+            )}
           </form>
 
           <div className="mt-6 text-center">
@@ -137,9 +153,9 @@ export default function LoginPage() {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="text-sm text-gray-400 hover:text-red-400 transition-colors"
+              className="text-sm text-gray-400 hover:text-slate-300 transition-colors"
             >
-              {isLogin ? 'Need an account? Join the undead' : 'Already risen? Enter here'}
+              {isLogin ? 'Need an account? Create one here' : 'Already have an account? Sign in'}
             </button>
           </div>
         </div>

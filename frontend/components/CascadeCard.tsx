@@ -1,6 +1,6 @@
 'use client';
 
-import { TrendingUp, ExternalLink, Skull } from 'lucide-react';
+import { TrendingUp, ExternalLink } from 'lucide-react';
 import { Cascade } from '@/types';
 
 interface CascadeCardProps {
@@ -26,7 +26,7 @@ export default function CascadeCard({ cascade, onViewSynthesis, isLoading }: Cas
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
-            <Skull className="w-5 h-5 text-red-600 spectral-glow" />
+            <div className="w-1 h-6 bg-gradient-to-b from-red-600 to-red-900 rounded-full"></div>
             <h3 className="text-xl font-bold text-white">
               {cascade.entity}
             </h3>

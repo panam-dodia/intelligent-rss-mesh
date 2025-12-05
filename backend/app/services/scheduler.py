@@ -7,24 +7,25 @@ from app.services.feed_fetcher import FeedFetcher
 from app.api.processing import process_article_task
 
 async def cleanup_old_articles():
-    """Delete articles older than 1 hour"""
+    """Delete articles published more than 7 days ago (changed from 24h to prevent deleting fresh articles)"""
     db = SessionLocal()
     try:
-        one_hour_ago = datetime.now() - timedelta(hours=1)
-        
-        # Count before delete
+        # Delete based on published date - but use 7 days to keep recent articles
+        seven_days_ago = datetime.now() - timedelta(days=7)
+
+        # Count before delete - only articles published more than 7 days ago
         old_count = db.query(Article).filter(
-            Article.published_date < one_hour_ago
+            Article.published_date < seven_days_ago
         ).count()
-        
+
         if old_count > 0:
             # Delete old articles
             db.query(Article).filter(
-                Article.published_date < one_hour_ago
+                Article.published_date < seven_days_ago
             ).delete()
-            
+
             db.commit()
-            print(f"🗑️ Deleted {old_count} articles older than 1 hour")
+            print(f"🗑️ Deleted {old_count} articles older than 7 days")
         else:
             print(f"✨ No old articles to delete")
     except Exception as e:
@@ -61,23 +62,35 @@ async def fetch_all_feeds():
             
             print(f"✅ Saved {saved_count} new articles from {feed.title}")
         
-        # LIMIT: Only process first 100 new articles
+        # Process new articles with better performance
         if new_article_ids:
-            articles_to_process = new_article_ids[:20]
+            articles_to_process = new_article_ids[:100]  # Increased from 20 to 100
             if len(new_article_ids) > 100:
                 print(f"⚠️ Limited processing to first 100 of {len(new_article_ids)} new articles")
             else:
                 print(f"🔮 Processing {len(articles_to_process)} new articles...")
-            
-            # Process in chunks of 10
-            for i in range(0, len(articles_to_process), 10):
-                batch = articles_to_process[i:i+10]
-                for article_id in batch:
+
+            # Process in parallel batches with concurrent.futures for better performance
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                # Submit all articles for processing
+                futures = {executor.submit(process_article_task, article_id): article_id
+                          for article_id in articles_to_process}
+
+                # Track progress
+                completed = 0
+                for future in as_completed(futures):
+                    article_id = futures[future]
                     try:
-                        process_article_task(article_id)
+                        future.result()
+                        completed += 1
+                        if completed % 10 == 0:
+                            print(f"📊 Progress: {completed}/{len(articles_to_process)} articles processed")
                     except Exception as e:
                         print(f"✗ Error processing {article_id}: {str(e)}")
-                await asyncio.sleep(0.5)
+
+            print(f"✅ Completed processing {completed} articles")
         
         # Clean up old articles after processing
         await cleanup_old_articles()

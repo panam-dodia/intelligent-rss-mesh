@@ -7,6 +7,26 @@ from app.services.ner_service import NERService
 
 router = APIRouter(prefix="/processing", tags=["processing"])
 
+# Create service singletons to avoid reloading models
+_ner_service = None
+_embedder_service = None
+
+def get_ner_service():
+    """Get or create NER service singleton"""
+    global _ner_service
+    if _ner_service is None:
+        print("🔧 Initializing NER service...")
+        _ner_service = NERService()
+    return _ner_service
+
+def get_embedder_service():
+    """Get or create Embedder service singleton"""
+    global _embedder_service
+    if _embedder_service is None:
+        print("🔧 Initializing Embedder service...")
+        _embedder_service = EmbeddingService()
+    return _embedder_service
+
 def process_article_task(article_id: int):
     """Background task to process an article"""
     db = SessionLocal()
@@ -14,16 +34,18 @@ def process_article_task(article_id: int):
         article = db.query(Article).filter(Article.id == article_id).first()
         if not article or article.is_processed:
             return
-        
+
+        # Use singleton services - MUCH faster!
+        ner = get_ner_service()
+        embedder = get_embedder_service()
+
         # Extract entities
-        ner = NERService()
         if article.content:
             entities = ner.extract_entities(article.content)
             article.entities = {"entities": entities}
             article.sentiment_score = ner.analyze_sentiment(article.content)
-        
+
         # Generate and store embedding
-        embedder = EmbeddingService()
         embedding_id = embedder.store_embedding(
             article_id=article.id,
             title=article.title,
@@ -33,10 +55,10 @@ def process_article_task(article_id: int):
                 "published_date": article.published_date.isoformat() if article.published_date else None
             }
         )
-        
+
         article.embedding_id = embedding_id
         article.is_processed = True
-        
+
         db.commit()
         print(f"✓ Processed article {article_id}: {article.title[:50]}")
     except Exception as e:
