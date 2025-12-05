@@ -9,7 +9,7 @@ from app.core.config import settings
 class EmbeddingService:
     def __init__(self):
         self.model = SentenceTransformer(settings.EMBEDDING_MODEL)
-        self.qdrant = QdrantClient(url=settings.QDRANT_URL)
+        self.qdrant = QdrantClient(url=settings.QDRANT_URL, timeout=10)  # 10 second timeout
         self._ensure_collection()
     
     def _ensure_collection(self):
