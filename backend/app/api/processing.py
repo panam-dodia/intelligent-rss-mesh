@@ -37,7 +37,7 @@ def process_article_task(article_id: int):
 
         # Use singleton services - MUCH faster!
         ner = get_ner_service()
-        embedder = get_embedder_service()
+        # embedder = get_embedder_service()  # DISABLED: Qdrant timeouts
 
         # Extract entities
         if article.content:
@@ -45,25 +45,12 @@ def process_article_task(article_id: int):
             article.entities = {"entities": entities}
             article.sentiment_score = ner.analyze_sentiment(article.content)
 
-        # Generate and store embedding with timeout handling
-        embedding_id = None
-        try:
-            embedding_id = embedder.store_embedding(
-                article_id=article.id,
-                title=article.title,
-                content=article.content or article.summary or "",
-                metadata={
-                    "source_domain": article.source_domain,
-                    "published_date": article.published_date.isoformat() if article.published_date else None
-                }
-            )
-            article.embedding_id = embedding_id
-        except Exception as embed_error:
-            # Don't fail the entire processing if embedding fails
-            print(f"⚠️  Embedding failed for article {article_id}: {str(embed_error)}")
-            article.embedding_id = None
+        # TEMPORARILY DISABLED: Embeddings are timing out with Qdrant
+        # We'll skip embeddings for now to get the system working
+        # The cascade detection and AI synthesis will still work based on entities
+        article.embedding_id = None
 
-        # Mark as processed even if embedding failed
+        # Mark as processed
         article.is_processed = True
 
         db.commit()
