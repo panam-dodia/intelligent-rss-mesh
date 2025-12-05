@@ -92,8 +92,8 @@ async def fetch_all_feeds():
 
             print(f"✅ Completed processing {completed} articles")
         
-        # Clean up old articles after processing
-        await cleanup_old_articles()
+        # Clean up old articles after processing - DISABLED for hackathon demo
+        # await cleanup_old_articles()
         
         print("🌙 All feeds fetched and processed!")
     except Exception as e:
@@ -105,9 +105,9 @@ async def background_scheduler():
     """Run scheduled tasks"""
     print("🎃 Background scheduler starting...")
     
-    # Clean up old articles IMMEDIATELY on startup
-    print("🧹 Cleaning up old articles on startup...")
-    await cleanup_old_articles()
+    # Clean up old articles IMMEDIATELY on startup - DISABLED for hackathon demo
+    # print("🧹 Cleaning up old articles on startup...")
+    # await cleanup_old_articles()
     
     # Wait 5 seconds before first fetch
     await asyncio.sleep(5)
