@@ -35,7 +35,8 @@ Please provide:
 3. Key facts or developments
 4. Any contradictions or different perspectives across sources
 
-Keep it concise and factual. Format as a briefing."""
+Keep it concise and factual. Format as a briefing.
+IMPORTANT: Do NOT use any Markdown formatting (no #, *, **, etc). Use plain text only."""
 
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",
