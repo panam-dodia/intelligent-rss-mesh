@@ -181,24 +181,6 @@ function Dashboard() {
               No cascades detected yet. Analysis in progress...
             </p>
 
-            {stats && stats.total_articles > 0 && (
-              <div className="max-w-md mx-auto mb-6">
-                <div className="flex justify-between text-sm text-gray-400 mb-2">
-                  <span>Processing articles...</span>
-                  <span>{stats.processed} / {stats.total_articles}</span>
-                </div>
-                <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-slate-700 via-slate-500 to-slate-700 transition-all duration-500"
-                    style={{ width: `${stats.processing_rate || '0%'}` }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Cascades will appear once enough articles are analyzed
-                </p>
-              </div>
-            )}
-
             <Link
               href="/feeds"
               className="inline-block px-6 py-3 cursed-button"

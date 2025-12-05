@@ -47,9 +47,6 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center py-12">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 border-2 border-slate-600 rounded-lg flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-slate-500 rounded-full"></div>
-          </div>
           <h1 className="text-4xl font-bold blood-text mb-2">
             {isLogin ? 'Access Intelligence Mesh' : 'Create Account'}
           </h1>
